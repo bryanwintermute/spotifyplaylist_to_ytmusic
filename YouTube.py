@@ -6,6 +6,7 @@ import argparse
 import difflib
 from collections import OrderedDict
 from SpotifyExport import Spotify
+import ExportifyImport
 import settings
 
 path = os.path.dirname(os.path.realpath(__file__)) + os.sep
@@ -130,6 +131,7 @@ def get_args():
     parser.add_argument("-p", "--public", action='store_true', help="Make the playlist public. Default: private")
     parser.add_argument("-r", "--remove", action='store_true', help="Remove playlists with specified regex pattern.")
     parser.add_argument("-a", "--all", action='store_true', help="Transfer all public playlists of the specified user (Spotify User ID).")
+    parser.add_argument("-e", "--exportify", action='store_true', help="The playlist is a file path to a CSV exported from Exportify instead of a Spotify playlist link.")
     return parser.parse_args()
 
 
@@ -163,27 +165,32 @@ def main():
     date = ""
     if args.date:
         date = " " + datetime.today().strftime('%m/%d/%Y')
+
     try:
-        playlist = Spotify().getSpotifyPlaylist(args.playlist)
+        if args.exportify:
+            # If no playlist name was specified, just use the file name
+            name = args.name if args.name else os.path.basename(args.playlist)
+            info = args.info if args.info else ""
+            exportify_tracks = ExportifyImport.exportify_parse(args.playlist)
+            playlist = Spotify().buildPlaylistFromSpotifyURIs(exportify_tracks, name, info)
+        else:
+            playlist = Spotify().getSpotifyPlaylist(args.playlist)
+            name = args.name + date if args.name else playlist['name'] + date
+            info = playlist['description'] if (args.info is None) else args.info
     except Exception as ex:
         print("Could not get Spotify playlist. Please check the playlist link.\n Error: " + repr(ex))
         return
-
-    name = args.name + date if args.name else playlist['name'] + date
-    info = playlist['description'] if (args.info is None) else args.info
 
     if args.update:
         playlistId = ytmusic.get_playlist_id(args.update)
         videoIds = ytmusic.search_songs(playlist['tracks'])
         ytmusic.remove_songs(playlistId)
         ytmusic.add_playlist_items(playlistId, videoIds)
-
     else:
         videoIds = ytmusic.search_songs(playlist['tracks'])
         playlistId = ytmusic.create_playlist(name, info, 'PUBLIC' if args.public else 'PRIVATE', videoIds)
-
         print("Success: created playlist \"" + name + "\"\n" +
-              "https://music.youtube.com/playlist?list=" + playlistId)
+            "https://music.youtube.com/playlist?list=" + playlistId)
 
 
 if __name__ == "__main__":

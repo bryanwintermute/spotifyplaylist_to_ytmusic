@@ -52,7 +52,14 @@ class Spotify:
             track = self.api.track(id)
             tracks.extend(build_results([track]))
         return tracks
+    
+    def buildPlaylistFromSpotifyURIs(self, track_uris, name, description):
+        tracks = []
+        for track_uri in track_uris:
+            spotify_track = self.api.track(track_uri)
+            tracks.extend(build_results([spotify_track]))
 
+        return {"tracks": tracks, "name": name, "description": description}
 
 def build_results(tracks, album=None):
     results = []
