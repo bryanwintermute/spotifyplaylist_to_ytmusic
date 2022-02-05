@@ -21,7 +21,13 @@ class YTMusicTransfer:
         return self.api.create_playlist(name, info, privacy, video_ids=tracks)
 
     def like_video_ids(self, videoIds):
-        likedSongs = self.api.get_liked_songs(5000) #  TODO: How should we deal with max size?
+        # Sleep for 2 seconds between "liking" video IDs. Without this, it seems the API just ignores our requests.
+        # It doesn't seem to return an error code either. Is there a better way?
+        sleepTime = 2
+
+        #  TODO: How should we deal with max size? Does this really matter? Don't really want to blow up the API quota.
+        # Gather as many already "liked" video IDs as we can to prevent blowing up the API quota later with pointless "likes."
+        likedSongs = self.api.get_liked_songs(5000)
         likedVideoIds = []
         for likedTrack in likedSongs['tracks']:
             likedVideoIds.append(likedTrack['videoId'])
@@ -33,8 +39,8 @@ class YTMusicTransfer:
             except:
                 print(f"Liking video ID: {videoId}")
                 self.api.rate_song(videoId, rating='LIKE')
-                print(f"Sleeping 2 seconds between likes...")
-                time.sleep(2) # Arg... One cannot like too quickly, it seems. 
+                print(f"Sleeping {sleepTime} seconds between likes...")
+                time.sleep(sleepTime) # Arg... One cannot like too quickly, it seems. 
 
     def get_best_fit_song_id(self, results, song):
         match_score = {}
