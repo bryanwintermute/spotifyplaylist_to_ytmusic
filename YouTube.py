@@ -145,8 +145,10 @@ class YTMusicTransfer:
 
 
 def get_args():
+    # TODO: the "playlist" arg is a little vague. Is there an easy way to convey what can/should go here?
+    # Problematic combos are -e, which expects "playlist" to be a path to a CSV, and -a, which expects a User ID.
     parser = argparse.ArgumentParser(description='Transfer spotify playlist to YouTube Music.')
-    parser.add_argument("playlist", type=str, help="Provide a playlist Spotify link.")
+    parser.add_argument("playlist", type=str, help="Provide a playlist Spotify link, a Spotify user ID (with -a), or a path to CSV file (with -e).")
     parser.add_argument("-u", "--update", type=str, help="Delete all entries in the provided Google Play Music playlist and update the playlist with entries from the Spotify playlist.")
     parser.add_argument("-n", "--name", type=str, help="Provide a name for the YouTube Music playlist. Default: Spotify playlist name")
     parser.add_argument("-i", "--info", type=str, help="Provide description information for the YouTube Music Playlist. Default: Spotify playlist description")
@@ -156,7 +158,7 @@ def get_args():
     parser.add_argument("-a", "--all", action='store_true', help="Transfer all public playlists of the specified user (Spotify User ID).")
     parser.add_argument("-e", "--exportify", action='store_true', help="The playlist is a file path to a CSV exported from Exportify instead of a Spotify playlist link.")
     parser.add_argument("-l", "--like", action='store_true', help="'Like' the tracks on YouTube Music")
-    parser.add_argument("-s", "--skip", action='store_true', help="Skip creation of the playlist on YouTube Music (useful for only 'liking' the music)")
+    parser.add_argument("-s", "--skip", action='store_true', help="Skip creation of the playlist on YouTube Music (useful for only 'liking' tracks)")
     return parser.parse_args()
 
 

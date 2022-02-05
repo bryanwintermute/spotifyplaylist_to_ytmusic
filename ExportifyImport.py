@@ -1,4 +1,3 @@
-import sys
 import csv
 
 def exportify_parse(file_path):
