@@ -4,6 +4,7 @@ import os
 import re
 import argparse
 import difflib
+import time
 from collections import OrderedDict
 from SpotifyExport import Spotify
 import ExportifyImport
@@ -18,6 +19,28 @@ class YTMusicTransfer:
 
     def create_playlist(self, name, info, privacy="PRIVATE", tracks=None):
         return self.api.create_playlist(name, info, privacy, video_ids=tracks)
+
+    def like_video_ids(self, videoIds):
+        # Sleep for 2 seconds between "liking" video IDs. Without this, it seems the API just ignores our requests.
+        # It doesn't seem to return an error code either. Is there a better way?
+        sleepTime = 2
+
+        #  TODO: How should we deal with max size? Does this really matter? Don't really want to blow up the API quota.
+        # Gather as many already "liked" video IDs as we can to prevent blowing up the API quota later with pointless "likes."
+        likedSongs = self.api.get_liked_songs(5000)
+        likedVideoIds = []
+        for likedTrack in likedSongs['tracks']:
+            likedVideoIds.append(likedTrack['videoId'])
+
+        for videoId in videoIds:
+            try:
+                if likedVideoIds.index(videoId) >= 0:
+                    print(f"Video ID is already liked: {videoId}")
+            except:
+                print(f"Liking video ID: {videoId}")
+                self.api.rate_song(videoId, rating='LIKE')
+                print(f"Sleeping {sleepTime} seconds between likes...")
+                time.sleep(sleepTime) # Arg... One cannot like too quickly, it seems. 
 
     def get_best_fit_song_id(self, results, song):
         match_score = {}
@@ -132,6 +155,8 @@ def get_args():
     parser.add_argument("-r", "--remove", action='store_true', help="Remove playlists with specified regex pattern.")
     parser.add_argument("-a", "--all", action='store_true', help="Transfer all public playlists of the specified user (Spotify User ID).")
     parser.add_argument("-e", "--exportify", action='store_true', help="The playlist is a file path to a CSV exported from Exportify instead of a Spotify playlist link.")
+    parser.add_argument("-l", "--like", action='store_true', help="'Like' the tracks on YouTube Music")
+    parser.add_argument("-s", "--skip", action='store_true', help="Skip creation of the playlist on YouTube Music (useful for only 'liking' the music)")
     return parser.parse_args()
 
 
@@ -188,9 +213,17 @@ def main():
         ytmusic.add_playlist_items(playlistId, videoIds)
     else:
         videoIds = ytmusic.search_songs(playlist['tracks'])
-        playlistId = ytmusic.create_playlist(name, info, 'PUBLIC' if args.public else 'PRIVATE', videoIds)
-        print("Success: created playlist \"" + name + "\"\n" +
-            "https://music.youtube.com/playlist?list=" + playlistId)
+
+        if not args.skip:
+            playlistId = ytmusic.create_playlist(name, info, 'PUBLIC' if args.public else 'PRIVATE', videoIds)
+            print("Success: created playlist \"" + name + "\"\n" +
+                "https://music.youtube.com/playlist?list=" + playlistId)
+        else:
+            print("Skipping playlist creation by request...")
+
+        if args.like:
+            print("Liking tracks...")
+            ytmusic.like_video_ids(videoIds)
 
 
 if __name__ == "__main__":
