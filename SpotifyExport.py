@@ -2,13 +2,19 @@ from spotipy.oauth2 import SpotifyClientCredentials
 import spotipy
 import settings
 import html
-
+import json
 
 class Spotify:
     def __init__(self):
         conf = settings['spotify']
         client_credentials_manager = SpotifyClientCredentials(client_id=conf['client_id'], client_secret=conf['client_secret'])
         self.api = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+
+    def getSpotifyPlaylistsFromTakeout(self, filepath):
+        with open(filepath, 'r') as openedFile:
+            playlists = json.load(openedFile)
+            return playlists
+
 
     def getSpotifyPlaylist(self, url):
         playlistId = get_id_from_url(url)

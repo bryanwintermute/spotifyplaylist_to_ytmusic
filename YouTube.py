@@ -149,6 +149,8 @@ def get_args():
     # Problematic combos are -e, which expects "playlist" to be a path to a CSV, and -a, which expects a User ID.
     parser = argparse.ArgumentParser(description='Transfer spotify playlist to YouTube Music.')
     parser.add_argument("playlist", type=str, help="Provide a playlist Spotify link, a Spotify user ID (with -a), or a path to CSV file (with -e).")
+    # TODO: fix name? Could be useful for -all?
+    #parser.add_argument("playlistName", type=str, help="When used with -t, the name of the playlist to import from takeout")
     parser.add_argument("-u", "--update", type=str, help="Delete all entries in the provided Google Play Music playlist and update the playlist with entries from the Spotify playlist.")
     parser.add_argument("-n", "--name", type=str, help="Provide a name for the YouTube Music playlist. Default: Spotify playlist name")
     parser.add_argument("-i", "--info", type=str, help="Provide description information for the YouTube Music Playlist. Default: Spotify playlist description")
@@ -159,6 +161,8 @@ def get_args():
     parser.add_argument("-e", "--exportify", action='store_true', help="The playlist is a file path to a CSV exported from Exportify instead of a Spotify playlist link.")
     parser.add_argument("-l", "--like", action='store_true', help="'Like' the tracks on YouTube Music")
     parser.add_argument("-s", "--skip", action='store_true', help="Skip creation of the playlist on YouTube Music (useful for only 'liking' tracks)")
+    # TODO: In the takeout case, the .json is ALL of the playlists. Need a way to specify the name of the playlist to import (or all?)
+    parser.add_argument("-t", "--takeout", action='store_true', help="The provided playlist is a file path to a .JSON file exported using Spotify's takeout process")
     return parser.parse_args()
 
 
@@ -200,6 +204,13 @@ def main():
             info = args.info if args.info else ""
             exportify_tracks = ExportifyImport.exportify_parse(args.playlist)
             playlist = Spotify().buildPlaylistFromSpotifyURIs(exportify_tracks, name, info)
+        elif args.takeout:
+            playlists = Spotify().getSpotifyPlaylistsFromTakeout(args.playlist)
+            for playlist in playlists['playlists']:
+                print(playlist['name'])
+
+            print(playlists)
+            return
         else:
             playlist = Spotify().getSpotifyPlaylist(args.playlist)
             name = args.name + date if args.name else playlist['name'] + date
